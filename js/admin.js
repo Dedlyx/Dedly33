@@ -9,33 +9,11 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log('Particles initialized');
     }
 
-    // Enhanced admin access check
-    function checkAdminAccess() {
-        const adminAuth = localStorage.getItem('adminAuthenticated');
-        console.log('Admin auth status:', adminAuth);
-        
-        if (!adminAuth || adminAuth !== 'true') {
-            console.log('Access denied, redirecting to main page...');
-            // Multiple redirect methods for reliability
-            setTimeout(() => {
-                try {
-                    window.location.href = 'index.html';
-                } catch (error) {
-                    console.error('Redirect failed:', error);
-                    window.location.replace('index.html');
-                }
-            }, 1000);
-            return false;
-        }
-        return true;
-    }
-
-    // Check admin access immediately
-    if (!checkAdminAccess()) {
+    // Check admin access
+    if (!localStorage.getItem('adminAuthenticated')) {
+        window.location.href = 'index.html';
         return;
     }
-
-    console.log('Admin access granted - loading admin panel');
 
     // Elements
     const logoutBtn = document.getElementById('logoutAdmin');
@@ -56,6 +34,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const screenshotTelegram = document.getElementById('screenshotTelegram');
     const screenshotDate = document.getElementById('screenshotDate');
     const closeScreenshot = document.querySelector('.close-screenshot');
+    const screenshotLoading = document.getElementById('screenshotLoading');
     const channelLinkInput = document.getElementById('channelLinkInput');
     const priceStandard = document.getElementById('priceStandard');
     const pricePro = document.getElementById('pricePro');
@@ -77,11 +56,7 @@ document.addEventListener('DOMContentLoaded', function() {
             users = JSON.parse(localStorage.getItem('users')) || [];
             promoCodes = JSON.parse(localStorage.getItem('promoCodes')) || [];
             referralSettings = JSON.parse(localStorage.getItem('referralSettings')) || { percent: 20 };
-            console.log('Admin data loaded:', {
-                orders: orders.length,
-                users: users.length,
-                promoCodes: promoCodes.length
-            });
+            console.log('Admin data loaded');
         } catch (error) {
             console.error('Error loading admin data:', error);
             orders = [];
@@ -273,23 +248,46 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function handleLogout() {
         localStorage.removeItem('adminAuthenticated');
-        showNotification('Выход из админ-панели...', 'info');
-        setTimeout(() => {
-            window.location.href = 'index.html';
-        }, 1000);
+        window.location.href = 'index.html';
     }
 
     // Make functions global for onclick handlers
     window.viewScreenshot = function(orderId) {
         const order = orders.find(o => o.id === orderId);
-        if (order && order.screenshot && screenshotModal) {
-            if (screenshotImage) screenshotImage.src = order.screenshot;
+        
+        if (!screenshotModal) return;
+        
+        // Show loading
+        if (screenshotLoading) screenshotLoading.style.display = 'block';
+        if (screenshotImage) screenshotImage.style.display = 'none';
+        
+        screenshotModal.style.display = 'block';
+        
+        if (order && order.screenshot) {
+            // Update info immediately
             if (screenshotProduct) screenshotProduct.textContent = order.product;
             if (screenshotPrice) screenshotPrice.textContent = order.amount + '₽' + (order.originalAmount !== order.amount ? ` (было ${order.originalAmount}₽)` : '');
             if (screenshotPromo) screenshotPromo.textContent = order.appliedPromo ? `${order.appliedPromo.code} (-${order.appliedPromo.discount}%)` : '—';
             if (screenshotTelegram) screenshotTelegram.textContent = order.telegram || 'Не указан';
             if (screenshotDate) screenshotDate.textContent = new Date(order.date).toLocaleString('ru-RU');
-            screenshotModal.style.display = 'block';
+            
+            // Load image with delay for smooth experience
+            setTimeout(() => {
+                if (screenshotImage) {
+                    screenshotImage.src = order.screenshot;
+                    screenshotImage.onload = function() {
+                        if (screenshotLoading) screenshotLoading.style.display = 'none';
+                        if (screenshotImage) screenshotImage.style.display = 'block';
+                    };
+                    screenshotImage.onerror = function() {
+                        if (screenshotLoading) screenshotLoading.style.display = 'none';
+                        showNotification('Ошибка загрузки скриншота', 'error');
+                    };
+                }
+            }, 100);
+        } else {
+            if (screenshotLoading) screenshotLoading.style.display = 'none';
+            showNotification('Скриншот не найден для этого заказа', 'error');
         }
     };
 
@@ -422,6 +420,7 @@ document.addEventListener('DOMContentLoaded', function() {
             z-index: 10000;
             animation: slideInRight 0.3s ease;
             max-width: 300px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
         `;
 
         document.body.appendChild(notification);
@@ -470,8 +469,12 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
 
-        // Periodic access check (every 30 seconds)
-        setInterval(checkAdminAccess, 30000);
+        // Handle escape key
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                if (screenshotModal) screenshotModal.style.display = 'none';
+            }
+        });
 
         console.log('Admin panel initialized successfully');
     }
