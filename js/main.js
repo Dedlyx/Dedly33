@@ -75,6 +75,26 @@ document.addEventListener('DOMContentLoaded', function() {
         document.body.style.overflow = '';
     }
 
+    // File validation function
+    function validateFile(file) {
+        const maxSize = 5 * 1024 * 1024; // 5MB
+        const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+        
+        if (!file) {
+            return 'Пожалуйста, выберите файл';
+        }
+        
+        if (!allowedTypes.includes(file.type)) {
+            return 'Разрешены только файлы JPEG, PNG, GIF и WebP';
+        }
+        
+        if (file.size > maxSize) {
+            return 'Размер файла не должен превышать 5MB';
+        }
+        
+        return null;
+    }
+
     // Initialize data from localStorage
     function initializeData() {
         try {
@@ -370,6 +390,13 @@ document.addEventListener('DOMContentLoaded', function() {
         const screenshot = screenshotInput.files[0];
         const telegram = telegramInput.value;
 
+        // Validate file
+        const fileError = validateFile(screenshot);
+        if (fileError) {
+            showNotification(fileError, 'error');
+            return;
+        }
+
         if (!screenshot) {
             showNotification('Пожалуйста, прикрепите скриншот оплаты', 'error');
             return;
@@ -399,7 +426,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 status: 'pending',
                 date: new Date().toISOString(),
                 isReferral: false,
-                referralBonusApplied: false
+                referralBonusApplied: false,
+                screenshot: e.target.result  // Save screenshot as Data URL
             };
 
             // Handle referral bonus
