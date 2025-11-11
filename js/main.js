@@ -1,4 +1,4 @@
-// Main JavaScript for Delyks Accounts
+// Main JavaScript for Delyks Accounts - Mobile Optimized
 
 document.addEventListener('DOMContentLoaded', function() {
     console.log('DOM loaded, initializing...');
@@ -8,6 +8,12 @@ document.addEventListener('DOMContentLoaded', function() {
         particlesJS('particles-js', particlesConfig);
         console.log('Particles initialized');
     }
+
+    // Mobile menu elements
+    const mobileMenuBtn = document.getElementById('mobileMenuBtn');
+    const navMenu = document.getElementById('navMenu');
+    const mobileNavOverlay = document.getElementById('mobileNavOverlay');
+    const navLinks = document.querySelectorAll('.nav-link');
 
     // Modal elements
     const loginModal = document.getElementById('loginModal');
@@ -21,6 +27,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const loginBtn = document.getElementById('loginBtn');
     const registerBtn = document.getElementById('registerBtn');
     const heroBuyBtn = document.getElementById('heroBuyBtn');
+    const heroBuyBtnMobile = document.getElementById('heroBuyBtnMobile');
     const buyButtons = document.querySelectorAll('.btn-buy-product');
     const adminAccessBtn = document.getElementById('admin-access');
     const channelLink = document.getElementById('channelLink');
@@ -52,6 +59,21 @@ document.addEventListener('DOMContentLoaded', function() {
         originalPrice: 0,
         appliedPromo: null
     };
+
+    // Mobile menu functionality
+    function toggleMobileMenu() {
+        mobileMenuBtn.classList.toggle('active');
+        navMenu.classList.toggle('active');
+        mobileNavOverlay.classList.toggle('active');
+        document.body.style.overflow = navMenu.classList.contains('active') ? 'hidden' : '';
+    }
+
+    function closeMobileMenu() {
+        mobileMenuBtn.classList.remove('active');
+        navMenu.classList.remove('active');
+        mobileNavOverlay.classList.remove('active');
+        document.body.style.overflow = '';
+    }
 
     // Initialize data from localStorage
     function initializeData() {
@@ -143,7 +165,9 @@ document.addEventListener('DOMContentLoaded', function() {
     function openModal(modal) {
         if (!modal) return;
         closeAllModals();
+        closeMobileMenu();
         modal.style.display = 'block';
+        document.body.style.overflow = 'hidden';
         
         // If opening profile modal, update stats
         if (modal.id === 'profileModal' && currentUser) {
@@ -156,6 +180,7 @@ document.addEventListener('DOMContentLoaded', function() {
         modals.forEach(modal => {
             if (modal) modal.style.display = 'none';
         });
+        document.body.style.overflow = '';
     }
 
     function openPurchaseModal(productType, price) {
@@ -430,7 +455,7 @@ document.addEventListener('DOMContentLoaded', function() {
             showNotification('Доступ разрешен! Переход в админ-панель...', 'success');
             
             setTimeout(() => {
-                openAdminPanel();
+                window.location.href = 'admin.html';
             }, 1000);
         } else {
             showNotification('Неверный код доступа. Попробуйте снова.', 'error');
@@ -441,34 +466,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     adminPasswordInput.style.borderColor = '';
                 }
             }, 2000);
-        }
-    }
-
-    function openAdminPanel() {
-        const methods = [
-            () => { window.location.href = 'admin.html'; },
-            () => { window.open('admin.html', '_self'); },
-            () => { 
-                const tempLink = document.createElement('a');
-                tempLink.href = 'admin.html';
-                tempLink.style.display = 'none';
-                document.body.appendChild(tempLink);
-                tempLink.click();
-                document.body.removeChild(tempLink);
-            }
-        ];
-
-        for (let i = 0; i < methods.length; i++) {
-            try {
-                methods[i]();
-                console.log(`Метод ${i + 1} выполнен успешно`);
-                break;
-            } catch (error) {
-                console.error(`Метод ${i + 1} не сработал:`, error);
-                if (i === methods.length - 1) {
-                    showNotification('Ошибка открытия админ-панели. Попробуйте открыть admin.html вручную.', 'error');
-                }
-            }
         }
     }
 
@@ -487,8 +484,14 @@ document.addEventListener('DOMContentLoaded', function() {
 
         if (currentUser) {
             authButtons.innerHTML = `
-                <button class="btn-login" id="profileBtn">Профиль</button>
-                <button class="btn-logout" id="logoutBtn">Выйти</button>
+                <button class="btn-login" id="profileBtn">
+                    <i class="fas fa-user"></i>
+                    Профиль
+                </button>
+                <button class="btn-logout" id="logoutBtn">
+                    <i class="fas fa-sign-out-alt"></i>
+                    Выйти
+                </button>
             `;
             
             const logoutBtn = document.getElementById('logoutBtn');
@@ -545,7 +548,8 @@ document.addEventListener('DOMContentLoaded', function() {
         if (!referralLink) return;
         
         referralLink.select();
-        document.execCommand('copy');
+        referralLink.setSelectionRange(0, 99999);
+        navigator.clipboard.writeText(referralLink.value);
         showNotification('Реферальная ссылка скопирована!', 'success');
     }
 
@@ -554,7 +558,8 @@ document.addEventListener('DOMContentLoaded', function() {
         if (!referralLink) return;
         
         referralLink.select();
-        document.execCommand('copy');
+        referralLink.setSelectionRange(0, 99999);
+        navigator.clipboard.writeText(referralLink.value);
         showNotification('Реферальная ссылка скопирована!', 'success');
     }
 
@@ -588,6 +593,7 @@ document.addEventListener('DOMContentLoaded', function() {
             z-index: 10000;
             animation: slideInRight 0.3s ease;
             max-width: 300px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
         `;
 
         document.body.appendChild(notification);
@@ -607,20 +613,54 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
+    // Smooth scrolling for anchor links
+    function initSmoothScroll() {
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                    closeMobileMenu();
+                }
+            });
+        });
+    }
+
+    // Initialize the application
     function init() {
         console.log('Initializing application...');
         
         initializeData();
         loadSettings();
         checkUrlReferral();
-
         updateAuthUI();
+        initSmoothScroll();
 
+        // Mobile menu event listeners
+        if (mobileMenuBtn) {
+            mobileMenuBtn.addEventListener('click', toggleMobileMenu);
+        }
+
+        if (mobileNavOverlay) {
+            mobileNavOverlay.addEventListener('click', closeMobileMenu);
+        }
+
+        navLinks.forEach(link => {
+            link.addEventListener('click', closeMobileMenu);
+        });
+
+        // Modal open handlers
         if (loginBtn) loginBtn.addEventListener('click', () => openModal(loginModal));
         if (registerBtn) registerBtn.addEventListener('click', () => openModal(registerModal));
         if (adminAccessBtn) adminAccessBtn.addEventListener('click', () => openModal(adminAccessModal));
         if (heroBuyBtn) heroBuyBtn.addEventListener('click', () => openPurchaseModal('pro', 65));
+        if (heroBuyBtnMobile) heroBuyBtnMobile.addEventListener('click', () => openPurchaseModal('pro', 65));
 
+        // Buy buttons
         if (buyButtons.length > 0) {
             buyButtons.forEach(button => {
                 button.addEventListener('click', () => {
@@ -631,11 +671,14 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         }
 
+        // Promo code handler
         if (applyPromoBtn) applyPromoBtn.addEventListener('click', applyPromoCode);
 
+        // Copy referral link handlers
         if (copyReferralBtn) copyReferralBtn.addEventListener('click', copyReferralLink);
         if (copyProfileReferralBtn) copyProfileReferralBtn.addEventListener('click', copyProfileReferralLink);
 
+        // Close modal handlers
         if (closeButtons.length > 0) {
             closeButtons.forEach(button => {
                 button.addEventListener('click', () => {
@@ -644,40 +687,68 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         }
 
+        // Form submission handlers
         if (loginForm) loginForm.addEventListener('submit', handleLogin);
         if (registerForm) registerForm.addEventListener('submit', handleRegister);
         if (paymentForm) paymentForm.addEventListener('submit', handlePayment);
         if (adminAccessForm) adminAccessForm.addEventListener('submit', handleAdminAccess);
 
+        // Close modal when clicking outside
         window.addEventListener('click', (event) => {
             if (event.target.classList.contains('modal')) {
                 closeAllModals();
             }
         });
 
+        // Handle escape key
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                closeAllModals();
+                closeMobileMenu();
+            }
+        });
+
         console.log('Application initialized successfully');
     }
 
+    // Start the application
     init();
 });
 
+// Particles configuration
 const particlesConfig = {
     particles: {
-        number: { value: 120, density: { enable: true, value_area: 1000 } },
-        color: { value: ["#00f3ff", "#9d4edd", "#f72585"] },
-        shape: { type: "circle" },
-        opacity: { value: 0.6, random: true },
-        size: { value: 3, random: true },
+        number: { 
+            value: 100, 
+            density: { 
+                enable: true, 
+                value_area: 800 
+            } 
+        },
+        color: { 
+            value: ["#00f3ff", "#9d4edd", "#f72585"] 
+        },
+        shape: { 
+            type: "circle" 
+        },
+        opacity: { 
+            value: 0.6, 
+            random: true 
+        },
+        size: { 
+            value: 2, 
+            random: true 
+        },
         line_linked: {
             enable: true,
-            distance: 150,
+            distance: 120,
             color: "#9d4edd",
-            opacity: 0.4,
+            opacity: 0.3,
             width: 1
         },
         move: {
             enable: true,
-            speed: 2,
+            speed: 1.5,
             direction: "none",
             random: true,
             out_mode: "out"
@@ -686,8 +757,14 @@ const particlesConfig = {
     interactivity: {
         detect_on: "canvas",
         events: {
-            onhover: { enable: true, mode: "repulse" },
-            onclick: { enable: true, mode: "push" }
+            onhover: { 
+                enable: true, 
+                mode: "repulse" 
+            },
+            onclick: { 
+                enable: true, 
+                mode: "push" 
+            }
         }
     }
 };
